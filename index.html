@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>60 Days — A Game of Transformation</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Syne+Mono&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --text: #e8e4dc;
+    --text-dim: #7a7a8a;
+    --text-dimmer: #4a4a5a;
+    --uto: #4fffb0;
+    --dis: #ff4455;
+    --neutral: #9090ff;
+    --gold: #ffd060;
+    --day-accent: #4fffb0;
+    --card-bg: #14141e;
+    --radius: 12px;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'Syne Mono', monospace;
+    --font-body: 'IBM Plex Serif', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ── TITLE SCREEN ── */
+  #screen-title {
+    background: var(--bg);
+    text-align: center;
+    gap: 0;
+  }
+
+  .title-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--text-dimmer);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .title-day {
+    font-family: var(--font-display);
+    font-size: clamp(72px, 20vw, 120px);
+    font-weight: 800;
+    line-height: 0.85;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--uto) 0%, #a0f0d0 40%, var(--neutral) 70%, var(--dis) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .title-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    margin-top: 16px;
+    margin-bottom: 48px;
+    text-transform: uppercase;
+  }
+
+  .title-premise {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    max-width: 320px;
+    margin-bottom: 48px;
+  }
+
+  .title-premise strong {
+    color: var(--text);
+    font-style: normal;
+    font-weight: 400;
+  }
+
+  .btn-primary {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 16px 40px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.15s;
+  }
+  .btn-primary:active { transform: scale(0.96); opacity: 0.9; }
+
+  .title-note {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-dimmer);
+    margin-top: 24px;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── HUD ── */
+  #hud {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 14px 20px 10px;
+    background: linear-gradient(to bottom, var(--bg) 70%, transparent);
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #hud.visible { display: flex; }
+
+  .hud-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .hud-day {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+  .hud-day span {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+  }
+
+  .hud-clock {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+  }
+  .hud-clock.urgent { color: var(--dis); animation: pulse 1s infinite; }
+  .hud-clock.ok { color: var(--uto); }
+  .hud-clock.warn { color: var(--gold); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .topia-bar-wrap {
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .topia-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease, background 0.6s ease;
+    position: relative;
+  }
+
+  .hud-expand {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-dimmer);
+    text-align: center;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    padding: 2px 0;
+  }
+
+  .hud-details {
+    display: none;
+    gap: 8px;
+    padding: 10px 0 4px;
+  }
+  .hud-details.open { display: flex; flex-wrap: wrap; }
+
+  .hud-stat {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-dimmer);
+    background: var(--surface);
+    padding: 4px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  .hud-stat .val { color: var(--text); margin-left: 4px; }
+
+  /* ── GAME SCREEN ── */
+  #screen-game {
+    justify-content: flex-end;
+    padding: 0;
+    align-items: stretch;
+    background: var(--bg);
+  }
+
+  .game-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 90px 24px 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scene-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--text-dimmer);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .scene-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+
+  .scene-text {
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 15px;
+    line-height: 1.75;
+    color: #c0bdb5;
+    margin-bottom: 8px;
+  }
+
+  .scene-text em { color: var(--text); font-style: italic; }
+  .scene-text strong { color: var(--text); font-style: normal; font-weight: 400; }
+
+  .consequence-banner {
+    margin: 16px 0;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    letter-spacing: 0.03em;
+    border-left: 3px solid;
+    animation: fadeSlideIn 0.5s ease;
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .consequence-banner.uto {
+    background: rgba(79, 255, 176, 0.08);
+    border-color: var(--uto);
+    color: #a0ffda;
+  }
+  .consequence-banner.dis {
+    background: rgba(255, 68, 85, 0.08);
+    border-color: var(--dis);
+    color: #ffaaaa;
+  }
+  .consequence-banner.neutral {
+    background: rgba(144, 144, 255, 0.08);
+    border-color: var(--neutral);
+    color: #c0c0ff;
+  }
+  .consequence-banner.time-gain {
+    background: rgba(255, 208, 96, 0.08);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  /* ── CHOICES ── */
+  .choices-area {
+    padding: 16px 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: linear-gradient(to top, var(--bg) 85%, transparent);
+  }
+
+  .choice-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .choice-btn:active {
+    transform: scale(0.98);
+    background: var(--surface2);
+  }
+  .choice-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .choice-label {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .choice-label .choice-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .choice-sub {
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    padding-left: 14px;
+  }
+
+  /* ── FAIL SCREEN ── */
+  #screen-fail {
+    text-align: center;
+    gap: 20px;
+    background: var(--bg);
+  }
+
+  .fail-day {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--dis);
+    text-transform: uppercase;
+  }
+
+  .fail-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(36px, 12vw, 56px);
+    letter-spacing: -0.03em;
+    color: var(--dis);
+    line-height: 1;
+  }
+
+  .fail-text {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    max-width: 300px;
+  }
+
+  /* ── END SCREEN ── */
+  #screen-end {
+    text-align: left;
+    align-items: flex-start;
+    gap: 0;
+    background: var(--bg);
+    overflow-y: auto;
+    padding: 48px 28px 60px;
+    justify-content: flex-start;
+  }
+
+  .end-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--text-dimmer);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .end-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(28px, 9vw, 42px);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 28px;
+  }
+
+  .end-body {
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .end-body strong { color: var(--text); font-weight: 400; }
+  .end-body em { color: var(--text); }
+
+  .end-divider {
+    width: 40px;
+    height: 1px;
+    background: var(--border);
+    margin: 28px 0;
+  }
+
+  .end-choices-made {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dimmer);
+    letter-spacing: 0.05em;
+    line-height: 2;
+    margin-bottom: 32px;
+  }
+  .end-choices-made .cho-uto { color: var(--uto); }
+  .end-choices-made .cho-dis { color: var(--dis); }
+  .end-choices-made .cho-n { color: var(--neutral); }
+
+  .btn-secondary {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 14px 32px;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-top: 8px;
+  }
+  .btn-secondary:active { background: var(--surface); }
+
+  /* ── TRANSITION ── */
+  .fade-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .fade-overlay.fading { opacity: 1; pointer-events: all; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* animate content in */
+  .scene-animate {
+    animation: sceneIn 0.5s ease forwards;
+  }
+  @keyframes sceneIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- FADE OVERLAY -->
+<div class="fade-overlay" id="fadeOverlay"></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-row">
+    <div class="hud-day">DAY <span id="hud-day-num">1</span></div>
+    <div class="hud-clock ok" id="hud-clock">⏱ 60 days</div>
+  </div>
+  <div class="topia-bar-wrap">
+    <div class="topia-bar-fill" id="topia-bar" style="width:50%; background: var(--neutral);"></div>
+  </div>
+  <div class="hud-expand" id="hud-expand-btn" onclick="toggleHudDetails()">▾ details</div>
+  <div class="hud-details" id="hud-details">
+    <div class="hud-stat">AMERICASH <span class="val" id="stat-americash">—</span></div>
+    <div class="hud-stat">TRIBUNALS <span class="val" id="stat-tribunals">—</span></div>
+    <div class="hud-stat">STABILITY <span class="val" id="stat-stability">—</span></div>
+    <div class="hud-stat">MEDIA <span class="val" id="stat-media">—</span></div>
+    <div class="hud-stat">MILITIA <span class="val" id="stat-militia">—</span></div>
+    <div class="hud-stat">TOPIA <span class="val" id="stat-topia">—</span></div>
+  </div>
+</div>
+
+<!-- TITLE SCREEN -->
+<div class="screen active" id="screen-title">
+  <div class="title-eyebrow">A game of transformation</div>
+  <div class="title-day">60<br>DAYS</div>
+  <div class="title-sub">January 20, 2029 — March 20, 2029</div>
+  <p class="title-premise">
+    The President has signed an executive order.<br><br>
+    <strong>Everything changes now.</strong><br><br>
+    Whether it changes into something <em>livable</em> — or something else entirely — depends on the decisions you make in the next sixty days.
+  </p>
+  <button class="btn-primary" onclick="startGame()">Begin</button>
+  <div class="title-note">~15 minutes · hard fail · no narrator · your choices</div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="screen-game">
+  <div class="game-content" id="game-content">
+    <!-- populated by JS -->
+  </div>
+  <div class="choices-area" id="choices-area">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<!-- FAIL SCREEN -->
+<div class="screen" id="screen-fail">
+  <div class="fail-day" id="fail-day-label">Day 7</div>
+  <div class="fail-title">The clock<br>ran out.</div>
+  <p class="fail-text" id="fail-text">The transformation collapsed before it could take hold. The old structures reasserted themselves.</p>
+  <button class="btn-primary" style="margin-top:8px" onclick="restartGame()">Try again</button>
+  <button class="btn-secondary" onclick="goTitle()">Title</button>
+</div>
+
+<!-- END SCREEN -->
+<div class="screen" id="screen-end">
+  <!-- populated by JS -->
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════
+let state = {};
+let choiceLog = [];
+let consequenceQueue = [];
+
+function initState() {
+  state = {
+    day: 1,
+    timeLeft: 60,
+    topia: 50,          // 0 = full dystopia, 100 = full utopia
+    americash: 0,       // 0-100: how well the currency system is working
+    tribunals: 0,       // 0-100: justice system operational
+    stability: 50,      // 0-100: social/political stability
+    media: 50,          // 0-100: media landscape health
+    militia: 50,        // 0-100: community self-organization
+    sceneIndex: 0,
+    lastConsequence: null,
+    lastConsequenceType: null,
+  };
+  choiceLog = [];
+  consequenceQueue = [];
+}
+
+// ═══════════════════════════════════════════════
+// SCENES
+// ═══════════════════════════════════════════════
+const SCENES = [
+
+  // ── DAY 1: THE SIGNING ──────────────────────
+  {
+    id: 'day1_signing',
+    day: 1,
+    label: 'Day 1 · January 20',
+    title: 'The Order',
+    text: `The President signs at 9:04 AM. The cameras catch the moment — pen meeting paper, the soft scratch of it on the broadcast feed.\n\nThe order creates <strong>Americash</strong>: a new currency, issued to every adult in the country. Two thousand units each. It expires in sixty days unless spent. It cannot be hoarded. It cannot be inherited.\n\nThe phones light up before the ink is dry. The question isn't whether people will accept it. The question is what it's <em>for</em>.`,
+    choices: [
+      {
+        label: 'Frame it as liberation',
+        sub: 'The message goes out: this money exists to be used. Rent, healthcare, student loans — eliminated. This is what yours is for.',
+        effect: { topia: +12, stability: +8, media: +10, timeLeft: +3 },
+        consequence: 'Civic devices light up across the country. The message lands before the counter-narrative can form.',
+        consequenceType: 'uto',
+        timeMsg: '+3 DAYS — the frame holds early'
+      },
+      {
+        label: 'Let it speak for itself',
+        sub: 'No messaging campaign. The money arrives. People will understand when they check their accounts.',
+        effect: { topia: -5, stability: -8, media: -5, timeLeft: -3 },
+        consequence: 'Confusion fills the vacuum. Cable news calls it a glitch. Three hours of lost ground.',
+        consequenceType: 'dis',
+        timeMsg: '−3 DAYS — narrative abandoned to opponents'
+      },
+      {
+        label: 'Frame it as security',
+        sub: 'The message emphasizes stability, order, continuity. The system still works. We are simply correcting an imbalance.',
+        effect: { topia: -8, stability: +12, media: +5, timeLeft: +1 },
+        consequence: 'Reassurance buys time. But "correction" is a word that can be reclaimed by those who want to correct it back.',
+        consequenceType: 'neutral',
+        timeMsg: '+1 DAY — stability, at a cost'
+      }
+    ]
+  },
+
+  // ── DAY 3: AMERICASH LIVE ───────────────────
+  {
+    id: 'day3_americash',
+    day: 3,
+    label: 'Day 3 · January 22',
+    title: 'The Money Moves',
+    text: `By 6 AM, 231 million accounts have been credited.\n\nThe cooperative grocery networks are overwhelmed. Corner stores that signed up for the Americash terminal are doing twenty times their usual volume. The ones that didn't are empty.\n\nA grocery chain executive appears on television. <em>"This is theft by another name,"</em> he says. Forty million people are watching. Forty million more are standing in line at the co-op.`,
+    choices: [
+      {
+        label: 'Accelerate cooperative onboarding',
+        sub: 'Deploy mobile terminals to any merchant who wants one. Make the infrastructure frictionless. Let the spending do the talking.',
+        effect: { americash: +20, topia: +10, stability: +5, timeLeft: +2 },
+        consequence: 'Seventy thousand new merchants onboard in 48 hours. The co-op model spreads faster than the opposition can organize against it.',
+        consequenceType: 'uto',
+        timeMsg: '+2 DAYS — infrastructure expands'
+      },
+      {
+        label: 'Freeze traditional retail pricing',
+        sub: 'Force existing chains to accept Americash at par. They comply or they close.',
+        effect: { americash: +8, topia: -5, stability: -10, timeLeft: -2, tribunals: +5 },
+        consequence: 'Compliance is partial. Resentment is total. Three chains announce they\'re "temporarily suspending operations."',
+        consequenceType: 'dis',
+        timeMsg: '−2 DAYS — coercion creates resistance'
+      },
+      {
+        label: 'Do nothing — let the market decide',
+        sub: 'Americash was designed to route around obstruction. Trust the mechanism.',
+        effect: { americash: +5, topia: +2, stability: +3, timeLeft: 0 },
+        consequence: 'The mechanism works — slowly. People find the co-ops. It takes longer than it should.',
+        consequenceType: 'neutral',
+        timeMsg: 'No change — patience costs nothing, gains nothing'
+      }
+    ]
+  },
+
+  // ── DAY 7: THE ATTACK ───────────────────────
+  {
+    id: 'day7_attack',
+    day: 7,
+    label: 'Day 7 · January 26',
+    title: 'The Attack',
+    text: `Someone cuts the fiber line serving three regional Americash nodes. Two hours later, a coordinated social media campaign declares the currency "already dead."\n\nThe FBI's new Economic Restoration Division identifies the source: a logistics firm whose parent company lost its contracts on Day 1. They're not alone. A network of extraction-class actors, moving fast.\n\nCommunity militias in seven cities have already mobilized. They're waiting for direction.`,
+    choices: [
+      {
+        label: 'Activate community militias — protect the nodes',
+        sub: 'Local organizations know their terrain. Give them the authority. Let community defense do what police no longer will.',
+        effect: { militia: +20, stability: +8, topia: +8, timeLeft: +3 },
+        consequence: 'The nodes come back online in four hours. The militia model spreads. People learn that they are the infrastructure.',
+        consequenceType: 'uto',
+        timeMsg: '+3 DAYS — self-organization proves itself'
+      },
+      {
+        label: 'Deploy federal response — visible force',
+        sub: 'Show that the government can protect its own systems. Public confidence requires visible authority.',
+        effect: { stability: +12, militia: -10, topia: -10, timeLeft: +1 },
+        consequence: 'The nodes are secured. But the message sent is: the old authority structure is still in charge.',
+        consequenceType: 'dis',
+        timeMsg: '+1 DAY — order, but at what cost'
+      },
+      {
+        label: 'Ignore the attack — prioritize redundancy',
+        sub: 'The blockchain was built to survive this. Reroute. Don\'t give the attack the dignity of a visible response.',
+        effect: { americash: -10, stability: -12, timeLeft: -4 },
+        consequence: 'The reroute works technically. But four hours of "Americash is down" plays on a loop. The doubt plants itself.',
+        consequenceType: 'dis',
+        timeMsg: '−4 DAYS — the narrative wound festers'
+      }
+    ]
+  },
+
+  // ── DAY 8: TRIBUNALS ────────────────────────
+  {
+    id: 'day8_tribunals',
+    day: 8,
+    label: 'Day 8 · January 27',
+    title: 'First Tribunal',
+    text: `The first accountability tribunal convenes at 10 AM. The format is simple: <strong>15 minutes of evidence. 5 minutes for the defendant. 15 minutes of community vote.</strong> Results announced same day.\n\nFour million people watch the first session. The vote display is live — you can see it move in real time, the numbers climbing.\n\nThe first case: a pharmaceutical CEO. The charge: deliberate supply restriction during the insulin shortage of 2026. He has a lawyer. The community has the evidence.`,
+    choices: [
+      {
+        label: 'Let the process run — no interference',
+        sub: 'The tribunal was designed to be transparent and self-correcting. Trust it. Let the community vote.',
+        effect: { tribunals: +25, topia: +12, stability: +5, timeLeft: +2 },
+        consequence: 'The vote comes in: 94% for accountability. Asset seizure ordered. The defendant\'s lawyer calls it a "mob." Fourteen million people watched him say it.',
+        consequenceType: 'uto',
+        timeMsg: '+2 DAYS — legitimacy compounds'
+      },
+      {
+        label: 'Scale immediately — run 50 tribunals in parallel',
+        sub: 'The backlog is enormous. Speed is justice. Run the process at scale from day one.',
+        effect: { tribunals: +15, topia: +5, stability: -10, timeLeft: -1 },
+        consequence: 'The infrastructure strains. Two verdicts are challenged on procedural grounds. The opposition has their first real opening.',
+        consequenceType: 'neutral',
+        timeMsg: '−1 DAY — speed creates cracks'
+      },
+      {
+        label: 'Start with lower-profile cases',
+        sub: 'Build the process credibility before the high-profile confrontations. A clean record of smaller cases first.',
+        effect: { tribunals: +10, topia: -8, stability: +8, timeLeft: +1 },
+        consequence: 'The process is clean. But the people who most need to see the powerful held accountable wait longer. Patience frays.',
+        consequenceType: 'dis',
+        timeMsg: '+1 DAY — caution preserves process, costs momentum'
+      }
+    ]
+  },
+
+  // ── DAY 14: SUPPLY CHAIN ────────────────────
+  {
+    id: 'day14_supply',
+    day: 14,
+    label: 'Day 14 · February 2',
+    title: 'The Food Question',
+    text: `The extraction layer has been removed from the food supply chain. Five middleman corporations, gone. The supply chain restructuring was supposed to reduce grocery prices by 50-60%.\n\nIt's working — but unevenly. Rural distribution is lagging. Three states in the interior are seeing shortages of specific goods. The agricultural cooperatives are operating at 82% capacity.\n\nA senator from Nebraska goes on television: <em>"The administration broke the food supply."</em>`,
+    choices: [
+      {
+        label: 'Surge resources to rural distribution',
+        sub: 'Prioritize the weakest nodes. Visible government action in the places that are suffering. Show the correction happening in real time.',
+        effect: { stability: +10, topia: +8, americash: +5, timeLeft: +2 },
+        consequence: 'The senator\'s district gets a new cooperative distribution hub within 72 hours. He doesn\'t apologize. But he stops talking.',
+        consequenceType: 'uto',
+        timeMsg: '+2 DAYS — visible competence'
+      },
+      {
+        label: 'Release the supply chain data publicly',
+        sub: 'Show everyone exactly what was extracted, what it cost, and what the new system is doing. Transparency as counter-narrative.',
+        effect: { media: +15, topia: +5, stability: +5, timeLeft: +1 },
+        consequence: 'The data spreads faster than the senator\'s clip. People can see, in their own county, what changed. The numbers speak.',
+        consequenceType: 'uto',
+        timeMsg: '+1 DAY — data as weapon'
+      },
+      {
+        label: 'Temporarily reinstate one major distributor',
+        sub: 'Bridge the gap. Restore the old infrastructure in limited areas until the new system catches up.',
+        effect: { stability: +5, topia: -15, americash: -8, timeLeft: -2 },
+        consequence: 'The shortage eases. But the extraction network now has a foothold. It will not want to leave.',
+        consequenceType: 'dis',
+        timeMsg: '−2 DAYS — pragmatism opens a door that won\'t close'
+      }
+    ]
+  },
+
+  // ── DAY 17: BETHLEHEM STEEL ─────────────────
+  {
+    id: 'day17_bethlehem',
+    day: 17,
+    label: 'Day 17 · February 5',
+    title: 'The Factory Floor',
+    text: `The old Bethlehem Steel site in Pennsylvania has been operating as a cooperative manufacturing collective for eleven days. Two thousand workers. They're building infrastructure components for the Americash network.\n\nA former board member files an injunction. The legal theory: the government seizure was unconstitutional. A federal judge — appointed in 2021 — has agreed to hear the case on an expedited basis.\n\nThe workers have a proposal. They want to broadcast the factory's operations live. "Let people see what we're building," their rep says.`,
+    choices: [
+      {
+        label: 'Support the live broadcast',
+        sub: 'Let the factory speak for itself. Two thousand people, making things, in real time. That\'s the argument.',
+        effect: { media: +12, topia: +10, stability: +5, timeLeft: +2 },
+        consequence: 'The feed gets forty million views in 24 hours. Someone overlays it with audio of the board member\'s compensation history. It\'s not the administration\'s doing. It doesn\'t need to be.',
+        consequenceType: 'uto',
+        timeMsg: '+2 DAYS — organic narrative'
+      },
+      {
+        label: 'Fight the injunction directly',
+        sub: 'Assign the best constitutional lawyers. Win the case. Set the precedent before it spreads.',
+        effect: { stability: +8, topia: -5, tribunals: +5, timeLeft: 0 },
+        consequence: 'The legal fight consumes attention and oxygen. The judge delays. Two other injunctions are filed in the interim.',
+        consequenceType: 'neutral',
+        timeMsg: 'No change — legal path is slow'
+      },
+      {
+        label: 'Negotiate with the board member',
+        sub: 'Offer partial compensation. Find the number. Make the lawsuit go away.',
+        effect: { stability: +5, topia: -18, americash: -5, timeLeft: -3 },
+        consequence: 'He takes the deal. Then leaks the terms. "The administration blinked," says every outlet that wanted to say it.',
+        consequenceType: 'dis',
+        timeMsg: '−3 DAYS — compromise signals weakness'
+      }
+    ]
+  },
+
+  // ── DAY 23: THE REVEAL ──────────────────────
+  {
+    id: 'day23_automation',
+    day: 23,
+    label: 'Day 23 · February 11',
+    title: 'The Machines',
+    text: `At dawn, automated vehicles begin their rounds in 200 cities. Street cleaners. Garbage collection. Construction equipment. Health monitoring stations.\n\nNo announcement preceded them. They simply appeared.\n\nBy noon, the question is everywhere: <em>Who built these? Who controls them? Who decided?</em>\n\nThe answer — that the infrastructure has been building itself, quietly, since Day 1 — is true. It is also the most alarming possible true thing to say.`,
+    choices: [
+      {
+        label: 'Full transparency — explain the full timeline',
+        sub: 'Yes, the systems were deployed before the announcement. Here is why. Here is who benefits. Here is the audit trail.',
+        effect: { topia: +8, stability: -5, media: +10, timeLeft: +1 },
+        consequence: 'Half the country respects the honesty. Half uses it as proof of a conspiracy. This is the split that will define the next thirty days.',
+        consequenceType: 'neutral',
+        timeMsg: '+1 DAY — truth is unstable but it compounds'
+      },
+      {
+        label: 'Emphasize what the machines do — not who made them',
+        sub: 'The question of origin is less important than the fact that your street is clean and no one is doing it in the heat. Lead with the function.',
+        effect: { topia: +12, stability: +8, media: +5, timeLeft: +3 },
+        consequence: 'The frame holds long enough. People trust what they can see. The origin story becomes a footnote.',
+        consequenceType: 'uto',
+        timeMsg: '+3 DAYS — tangible benefit wins the argument'
+      },
+      {
+        label: 'Announce a "public review" of automation deployment',
+        sub: 'Create a process. Let people feel heard. Slow the rollout pending the review.',
+        effect: { topia: -10, stability: +5, americash: -5, timeLeft: -3 },
+        consequence: 'The machines stop. The streets go back to needing people to clean them. The review board meets once, then the injunctions begin.',
+        consequenceType: 'dis',
+        timeMsg: '−3 DAYS — process as delay tactic backfires'
+      }
+    ]
+  },
+
+  // ── DAY 30: THE RECALCULATION ───────────────
+  {
+    id: 'day30_recalc',
+    day: 30,
+    label: 'Day 30 · February 18',
+    title: 'The Number Drops',
+    text: `At midnight, the Americash deposit recalculates.\n\nFor thirty days, accounts received <strong>4,500 units</strong> monthly. The new figure: <strong>2,200 units</strong>.\n\nThe opposition has been waiting for this moment. By 6 AM, the narrative is everywhere: <em>"The government cut your UBI in half."</em>\n\nWhat the message doesn't say: rent is free. Healthcare is free. Pharmaceuticals, phone, internet, student loans — all gone. The 2,200 units is discretionary spending. Pure. The actual spending power is five times what it was before Day 1.\n\nThe question is whether anyone hears that explanation before the anger sets.`,
+    choices: [
+      {
+        label: 'Lead with the spending power comparison — in numbers',
+        sub: 'Side-by-side. Old budget vs new budget. Real numbers, real families, real categories. Show the math before the feelings calcify.',
+        effect: { topia: +15, stability: +12, media: +8, timeLeft: +4 },
+        consequence: 'The comparison graphic is shared 80 million times. People check their own bills. The opposition\'s framing collapses against the arithmetic.',
+        consequenceType: 'uto',
+        timeMsg: '+4 DAYS — math wins when you show the math'
+      },
+      {
+        label: 'Defend the decision on principle',
+        sub: 'The recalculation was planned. It is economically sound. The administration will not apologize for responsible policy.',
+        effect: { stability: -12, topia: -8, timeLeft: -4 },
+        consequence: '"Responsible policy" is not a phrase that lands when someone\'s monthly number just dropped. The gap between the argument and the feeling is where the opposition lives.',
+        consequenceType: 'dis',
+        timeMsg: '−4 DAYS — principle without empathy'
+      },
+      {
+        label: 'Delay the recalculation — buy one more month',
+        sub: 'The optics are bad. Push it 30 days. Use the time to build the counter-narrative.',
+        effect: { americash: -15, stability: +5, topia: -10, timeLeft: -2 },
+        consequence: 'The delay leaks within 48 hours. Now the story is: "The government knew the cut was unpopular and hid it." Worse than the original.',
+        consequenceType: 'dis',
+        timeMsg: '−2 DAYS — delay becomes deception'
+      }
+    ]
+  },
+
+  // ── DAY 38: ELEANOR ─────────────────────────
+  {
+    id: 'day38_eleanor',
+    day: 38,
+    label: 'Day 38 · February 26',
+    title: 'The Woman in 4B',
+    text: `A letter surfaces — handwritten, copied by a correctional officer who kept it for his own protection.\n\nIt is from Eleanor Voss, a former federal judge, currently held in a facility called 4B. The letter describes the conditions in extraordinary detail. It was addressed to a journalist. It arrived.\n\nEleanor Voss, it turns out, presided over twelve significant asset seizures before her arrest. The people whose assets she protected are the people funding the opposition.\n\nThe tribunal system has 40,000 cases in its queue. Hers is not among them.`,
+    choices: [
+      {
+        label: 'Add her case to the tribunal queue — standard process',
+        sub: 'The system exists for this. Let it work. No special treatment, no special delay.',
+        effect: { tribunals: +10, topia: +10, stability: +5, timeLeft: +2 },
+        consequence: 'The case proceeds in the order it was filed. The transparency of the process is itself the answer to the opposition\'s charge of political persecution.',
+        consequenceType: 'uto',
+        timeMsg: '+2 DAYS — process as proof'
+      },
+      {
+        label: 'Release her immediately — the optics are too dangerous',
+        sub: 'The letter will be used against you. Better to release her and neutralize the story.',
+        effect: { stability: +5, topia: -20, tribunals: -10, timeLeft: -3 },
+        consequence: 'She holds a press conference within hours. She is articulate, credible, and furious. You handed her the platform.',
+        consequenceType: 'dis',
+        timeMsg: '−3 DAYS — fear-based decisions compound'
+      },
+      {
+        label: 'Surface the evidence against her — publicly',
+        sub: 'Declassify the financial records. Let the public see what she did and why she is there.',
+        effect: { media: +10, topia: +5, stability: -5, timeLeft: +1 },
+        consequence: 'The evidence is compelling. It is also exactly what she claimed the government would do. Some people believe the evidence. Some people believe her.',
+        consequenceType: 'neutral',
+        timeMsg: '+1 DAY — evidence is necessary, not sufficient'
+      }
+    ]
+  },
+
+  // ── DAY 45: INTERNATIONAL ───────────────────
+  {
+    id: 'day45_international',
+    day: 45,
+    label: 'Day 45 · March 5',
+    title: 'The Confederation',
+    text: `Twelve countries in the Western Hemisphere have formally joined the Americash trade zone. Three more are in negotiation. The dollar is trading at 34 cents against its Day 1 value.\n\nThe G7 has issued a coordinated statement: sanctions are being considered. The language is careful but the intent is clear.\n\nA delegation from the Global South — seventeen nations — has requested an audience. Their position: they want in. They want the framework applied to their debt structures. They have been waiting for this conversation for forty years.\n\nYou have twelve hours.`,
+    choices: [
+      {
+        label: 'Meet with the Global South delegation first',
+        sub: 'The G7 represents the old order. The Global South represents the world after it. Choose which conversation you\'re having.',
+        effect: { topia: +15, stability: +5, timeLeft: +3, americash: +8 },
+        consequence: 'The meeting runs six hours. Three joint frameworks are drafted. The G7 statement becomes background noise.',
+        consequenceType: 'uto',
+        timeMsg: '+3 DAYS — aligning with the future'
+      },
+      {
+        label: 'Negotiate with the G7 — buy time',
+        sub: 'Delay the sanctions. Make concessions. Protect the domestic transformation from external pressure.',
+        effect: { topia: -12, stability: +10, timeLeft: -1, americash: -5 },
+        consequence: 'The G7 takes the concessions and calls for more. The Global South delegation waits. The framework you\'ve built is starting to smell like the one it replaced.',
+        consequenceType: 'dis',
+        timeMsg: '−1 DAY — appeasement invites more demands'
+      },
+      {
+        label: 'Ignore both — the domestic transformation takes priority',
+        sub: 'You have 15 days left. Finish what you started. The international situation resolves itself or it doesn\'t.',
+        effect: { stability: -8, topia: +5, timeLeft: -2 },
+        consequence: 'The G7 sanctions pass. The Global South begins organizing without you. Both things were going to happen anyway. Now they happen faster.',
+        consequenceType: 'neutral',
+        timeMsg: '−2 DAYS — isolation compounds'
+      }
+    ]
+  },
+
+  // ── DAY 52: THE QUESTION ─────────────────────
+  {
+    id: 'day52_question',
+    day: 52,
+    label: 'Day 52 · March 12',
+    title: 'What Comes After',
+    text: `Eight days remain.\n\nThe transformation has happened — in some form. The question now is what it becomes after Day 60.\n\nThe Americash system requires a governance structure. Someone has to run the tribunals. Someone has to decide the automation deployment schedule. Someone has to manage the confederation agreements.\n\nThree proposals have been presented. They are not compatible with each other. You must choose one before Day 60, or the system will default to the one that already exists — the one you replaced.`,
+    choices: [
+      {
+        label: 'Distributed councils — community governance at every level',
+        sub: 'No central authority. Federated decision-making. The power stays where you put it.',
+        effect: { topia: +20, stability: -10, timeLeft: +2 },
+        consequence: 'The councils form faster than anyone predicted. They are also more chaotic than anyone predicted. That was always the deal.',
+        consequenceType: 'uto',
+        timeMsg: '+2 DAYS — distributed power is resilient'
+      },
+      {
+        label: 'Extend executive authority — transition period',
+        sub: 'The transformation isn\'t finished. Sixty more days of central coordination, then review.',
+        effect: { topia: -20, stability: +15, timeLeft: +3 },
+        consequence: 'The review doesn\'t happen. The transition period extends. The word "temporary" begins to sound different than it did on Day 1.',
+        consequenceType: 'dis',
+        timeMsg: '+3 DAYS — control preserved, at a price'
+      },
+      {
+        label: 'Hybrid: constitutional amendment process',
+        sub: 'Take it to the people formally. A new constitutional framework ratified through the existing amendment process, updated for what\'s been built.',
+        effect: { topia: +8, stability: +8, tribunals: +10, timeLeft: 0 },
+        consequence: 'The process begins. It will take longer than 60 days to complete. You will not see the ending. That might be the point.',
+        consequenceType: 'neutral',
+        timeMsg: 'No change — the future is genuinely uncertain'
+      }
+    ]
+  },
+
+  // ── DAY 60: THE LAST DECISION ───────────────
+  {
+    id: 'day60_end',
+    day: 60,
+    label: 'Day 60 · March 20',
+    title: 'The Last Day',
+    text: `The sixty days are complete.\n\nAcross the country, Americash units are expiring and recirculating. The tribunals have processed tens of thousands of cases. The cooperative networks are running. The automation is visible on every street.\n\nSomething has been built. What it is — what it becomes — depends on everything that came before this moment.\n\nYou have one decision left.`,
+    choices: [
+      {
+        label: 'Step back — let the system run',
+        sub: 'The architecture was designed to work without you. If it doesn\'t, it was never going to work. Release it.',
+        effect: { topia: +15, timeLeft: +5 },
+        consequence: 'The system runs.',
+        consequenceType: 'uto',
+        timeMsg: 'Final decision made'
+      },
+      {
+        label: 'Stay in control — you are the system',
+        sub: 'Sixty days was a beginning, not an end. The transformation needs a steward. You are still here.',
+        effect: { topia: -15, stability: +10, timeLeft: +5 },
+        consequence: 'You remain.',
+        consequenceType: 'dis',
+        timeMsg: 'Final decision made'
+      },
+      {
+        label: 'Document everything — then leave',
+        sub: 'Write down what you did and why. All of it. Then walk away and let history decide.',
+        effect: { topia: +5, media: +10, timeLeft: +5 },
+        consequence: 'The document is 400 pages long. It will be read for a hundred years.',
+        consequenceType: 'neutral',
+        timeMsg: 'Final decision made'
+      }
+    ]
+  }
+
+];
+
+// ═══════════════════════════════════════════════
+// ENDINGS
+// ═══════════════════════════════════════════════
+function generateEnding() {
+  const t = state.topia;
+  const s = state.stability;
+  const a = state.americash;
+  const tr = state.tribunals;
+  const m = state.media;
+  const mil = state.militia;
+
+  // Classify the world
+  const isUtopian = t >= 70;
+  const isDystopian = t <= 30;
+  const isUnstable = s < 30;
+  const isMixed = !isUtopian && !isDystopian;
+  const isHighTribunals = tr >= 50;
+  const isHighMedia = m >= 60;
+  const isHighMilitia = mil >= 60;
+  const isHighAmericash = a >= 50;
+
+  let title, body1, body2, body3, coda;
+  let titleColor = isUtopian ? 'var(--uto)' : isDystopian ? 'var(--dis)' : 'var(--neutral)';
+
+  if (isUtopian && !isUnstable) {
+    title = 'The Correction\nHeld.';
+    body1 = `Sixty days after the signing, the streets look different. Not because someone made them different — because the people who live on them decided they could be. The cooperative networks are running. The automation does the work no one wanted to do. The tribunals are still convening, one case at a time.`;
+    body2 = `The word that keeps appearing in the dispatches, in the letters, in the messages people send each other on their civic devices, is <em>breathing room</em>. Room to want things. Room to become something that the old economy didn't need you to be.`;
+    body3 = isHighTribunals
+      ? `The accountability process proved to be not an end but a beginning. Forty thousand cases. The evidence exists. The community voted. The numbers don't lie.`
+      : `There are still cases waiting. There will always be more cases. The system was built to process them. It will continue after you.`;
+    coda = isHighMedia
+      ? `The story that got told was the true one. That doesn't always happen. This time it did.`
+      : `Some of the story got lost. The parts that got through were enough.`;
+
+  } else if (isUtopian && isUnstable) {
+    title = 'Beautiful\nand Fragile.';
+    body1 = `The transformation happened. The numbers are real — Americash circulating, cooperatives operating, rent eliminated, the extraction layer gone. Walk the streets and you can see it.`;
+    body2 = `What you can also see: the cracks. The governance structure is contested. The councils are forming but they're fighting about formation. The question of what comes after was answered with a question.`;
+    body3 = `In five years, they will either have figured it out, or they will look back at these sixty days as the beginning of something that almost was. The probability distribution is genuinely wide.`;
+    coda = `You built something worth fighting to keep. Whether it gets kept is no longer your decision.`;
+
+  } else if (isDystopian && !isUnstable) {
+    title = 'A Different\nKind of Order.';
+    body1 = `The transformation happened. The numbers are different from what they were. The Americash system runs. The tribunals convene. The streets are clean.`;
+    body2 = `What changed is harder to name. The decisions that got made in the first sixty days — who to protect, who to coerce, who to silence — those decisions are <strong>now the architecture</strong>. They don't go away when the emergency does.`;
+    body3 = isHighTribunals
+      ? `The tribunal system is operational at scale. It was designed for accountability. It turns out that "accountability" is a word that can be aimed in any direction.`
+      : `The tribunal system was slow to build and slow to trust. The cases that mattered most waited longest.`;
+    coda = `This is a world where the extraction changed hands. Whether that was the point depends on which side of it you're standing on.`;
+
+  } else if (isDystopian && isUnstable) {
+    title = 'The Fracture.';
+    body1 = `By Day 60, the term "transformation" has become contested in a way that reveals something about language itself. Every side of every remaining conflict uses it.`;
+    body2 = `The Americash system is ${a >= 30 ? 'running, though disputed in seven states' : 'partially operational, with three major regions having issued alternative currencies'}. The tribunals ${tr >= 30 ? 'continue, though their legitimacy is no longer assumed' : 'have been suspended in four jurisdictions pending legal review'}. The automation is visible everywhere. What it serves is less clear.`;
+    body3 = `The sixty days built something. The problem is that what was built doesn't have a clear name. Not the old world. Not the world that was promised. Something in between, still moving.`;
+    coda = `In the absence of a shared name for a thing, people choose the name that serves them. This is where you left it.`;
+
+  } else {
+    // Mixed
+    title = 'Something\nIn Between.';
+    body1 = `The world that exists on Day 60 is neither the one the architects promised nor the one their opponents feared. It is the one that the decisions made — accumulated, corrected, compounded.`;
+    body2 = `${isHighAmericash ? 'The currency worked better than the models predicted. People understood precautionary spending intuitively — they\'d been living under scarcity their whole lives.' : 'The currency worked well enough. The spending patterns were less predictable than the models suggested. That turned out to be fine.'} ${isHighMilitia ? 'The community organizations were the surprise. Nobody budgeted for how fast people would organize once the obstacles were removed.' : 'The community organizations are forming. Slowly. This is what slow looks like when it eventually becomes fast.'}`;
+    body3 = `What the sixty days did, definitively, is change the shape of what's possible. The floor was raised. The ceiling hasn't been found yet.`;
+    coda = `This is the kind of ending that gets called "complicated" by people who need it to be simpler than it is. It isn't simpler. That's the story.`;
+  }
+
+  return { title, body1, body2, body3, coda, titleColor };
+}
+
+// ═══════════════════════════════════════════════
+// FAIL CONDITIONS
+// ═══════════════════════════════════════════════
+function checkFailConditions() {
+  if (state.timeLeft <= 0) {
+    triggerFail('The clock ran out.', `By Day ${state.day}, the window for transformation had closed. The old structures moved faster than the new ones could form.`);
+    return true;
+  }
+  if (state.stability <= 0 && state.day > 10) {
+    triggerFail('The system collapsed.', `The social fabric couldn't hold the speed of change. On Day ${state.day}, the instability crossed a threshold that no decision could walk back.`);
+    return true;
+  }
+  if (state.americash < 0 && state.day > 20) {
+    triggerFail('The currency failed.', `Without a functioning exchange system, the transformation had no circulatory system. By Day ${state.day}, the Americash network was effectively inoperative.`);
+    return true;
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════
+// UI FUNCTIONS
+// ═══════════════════════════════════════════════
+function updateHUD() {
+  document.getElementById('hud-day-num').textContent = state.day;
+
+  const cl = document.getElementById('hud-clock');
+  cl.textContent = `⏱ ${state.timeLeft} days`;
+  cl.className = 'hud-clock';
+  if (state.timeLeft <= 10) cl.classList.add('urgent');
+  else if (state.timeLeft <= 20) cl.classList.add('warn');
+  else cl.classList.add('ok');
+
+  // Topia bar
+  const bar = document.getElementById('topia-bar');
+  bar.style.width = Math.max(2, state.topia) + '%';
+  if (state.topia >= 65) bar.style.background = 'linear-gradient(to right, #2ab870, var(--uto))';
+  else if (state.topia >= 45) bar.style.background = 'linear-gradient(to right, var(--neutral), #a0d0ff)';
+  else bar.style.background = 'linear-gradient(to right, #cc1122, var(--dis))';
+
+  // Stats
+  const fmt = v => v <= 0 ? '▼ LOW' : v <= 30 ? '▼ WEAK' : v <= 60 ? '◆ MID' : '▲ STRONG';
+  document.getElementById('stat-americash').textContent = state.americash <= 0 ? '▼ FAILING' : fmt(state.americash);
+  document.getElementById('stat-tribunals').textContent = fmt(state.tribunals);
+  document.getElementById('stat-stability').textContent = fmt(state.stability);
+  document.getElementById('stat-media').textContent = fmt(state.media);
+  document.getElementById('stat-militia').textContent = fmt(state.militia);
+  document.getElementById('stat-topia').textContent = state.topia >= 65 ? '◆ UTOPIAN' : state.topia <= 35 ? '◆ DYSTOPIAN' : '◆ CONTESTED';
+}
+
+function toggleHudDetails() {
+  const d = document.getElementById('hud-details');
+  const b = document.getElementById('hud-expand-btn');
+  const open = d.classList.toggle('open');
+  b.textContent = open ? '▴ hide' : '▾ details';
+}
+
+function renderScene(sceneIdx, consequence, consequenceType, timeMsg) {
+  if (sceneIdx >= SCENES.length) {
+    showEnding();
+    return;
+  }
+
+  const scene = SCENES[sceneIdx];
+  state.day = scene.day;
+  updateHUD();
+
+  const content = document.getElementById('game-content');
+  const choicesArea = document.getElementById('choices-area');
+
+  // Build text with newlines
+  const paragraphs = scene.text.split('\n\n').map(p => `<p class="scene-text">${p}</p>`).join('');
+
+  let consequenceBanner = '';
+  if (consequence) {
+    const timeDisplay = timeMsg ? `<br><span style="font-size:10px;opacity:0.7">${timeMsg}</span>` : '';
+    consequenceBanner = `<div class="consequence-banner ${consequenceType || 'neutral'}">${consequence}${timeDisplay}</div>`;
+  }
+
+  content.innerHTML = `
+    <div class="scene-animate">
+      ${consequenceBanner}
+      <div class="scene-label">${scene.label}</div>
+      <div class="scene-title">${scene.title}</div>
+      ${paragraphs}
+    </div>
+  `;
+
+  // Build choices
+  const colors = { uto: 'var(--uto)', dis: 'var(--dis)', neutral: 'var(--neutral)' };
+
+  let choicesHTML = '';
+  scene.choices.forEach((c, i) => {
+    // Infer dot color from effect
+    const topiaDelta = c.effect.topia || 0;
+    const dotColor = topiaDelta > 5 ? 'var(--uto)' : topiaDelta < -5 ? 'var(--dis)' : 'var(--text-dimmer)';
+    choicesHTML += `
+      <button class="choice-btn" onclick="makeChoice(${sceneIdx}, ${i})">
+        <div class="choice-label">
+          <span class="choice-dot" style="background:${dotColor}"></span>
+          ${c.label}
+        </div>
+        <div class="choice-sub">${c.sub}</div>
+      </button>
+    `;
+  });
+
+  choicesArea.innerHTML = choicesHTML;
+  content.scrollTop = 0;
+}
+
+function makeChoice(sceneIdx, choiceIdx) {
+  const scene = SCENES[sceneIdx];
+  const choice = scene.choices[choiceIdx];
+
+  // Apply effects
+  const ef = choice.effect;
+  Object.keys(ef).forEach(key => {
+    if (state.hasOwnProperty(key)) {
+      state[key] += ef[key];
+    }
+  });
+
+  // Clamp
+  state.topia = Math.max(0, Math.min(100, state.topia));
+  state.stability = Math.max(0, Math.min(100, state.stability));
+  state.americash = Math.max(-20, Math.min(100, state.americash));
+  state.tribunals = Math.max(0, Math.min(100, state.tribunals));
+  state.media = Math.max(0, Math.min(100, state.media));
+  state.militia = Math.max(0, Math.min(100, state.militia));
+
+  // Log
+  const topiaDelta = ef.topia || 0;
+  const logClass = topiaDelta > 5 ? 'cho-uto' : topiaDelta < -5 ? 'cho-dis' : 'cho-n';
+  choiceLog.push({ label: choice.label, day: scene.day, cls: logClass, scene: scene.title });
+
+  // Check fail
+  if (checkFailConditions()) return;
+
+  // Check ending
+  if (sceneIdx >= SCENES.length - 1) {
+    showEnding();
+    return;
+  }
+
+  // Next scene
+  state.sceneIndex = sceneIdx + 1;
+  fadeTransition(() => {
+    renderScene(state.sceneIndex, choice.consequence, choice.consequenceType, choice.timeMsg);
+  });
+}
+
+function fadeTransition(fn) {
+  const overlay = document.getElementById('fadeOverlay');
+  overlay.classList.add('fading');
+  setTimeout(() => {
+    fn();
+    overlay.classList.remove('fading');
+  }, 300);
+}
+
+// ═══════════════════════════════════════════════
+// SCREENS
+// ═══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function startGame() {
+  initState();
+  document.getElementById('hud').classList.add('visible');
+  showScreen('game');
+  updateHUD();
+  renderScene(0, null, null, null);
+}
+
+function triggerFail(title, text) {
+  document.getElementById('fail-day-label').textContent = `Day ${state.day}`;
+  document.getElementById('fail-text').textContent = text;
+  document.getElementById('hud').classList.remove('visible');
+  fadeTransition(() => showScreen('fail'));
+}
+
+function restartGame() {
+  document.getElementById('hud').classList.add('visible');
+  showScreen('game');
+  initState();
+  updateHUD();
+  renderScene(0, null, null, null);
+}
+
+function goTitle() {
+  document.getElementById('hud').classList.remove('visible');
+  showScreen('title');
+}
+
+function showEnding() {
+  const ending = generateEnding();
+  document.getElementById('hud').classList.remove('visible');
+
+  // Build choice log display
+  let choiceLogHTML = '<div class="end-choices-made">';
+  choiceLogHTML += 'DECISIONS MADE:<br>';
+  choiceLog.forEach(c => {
+    choiceLogHTML += `<span class="${c.cls}">Day ${c.day} · ${c.scene}: ${c.label}</span><br>`;
+  });
+  choiceLogHTML += '</div>';
+
+  const endScreen = document.getElementById('screen-end');
+  endScreen.innerHTML = `
+    <div class="end-eyebrow">Day 60 · March 20, 2029</div>
+    <div class="end-title" style="color:${ending.titleColor}">${ending.title.replace('\n', '<br>')}</div>
+    <p class="end-body">${ending.body1}</p>
+    <p class="end-body">${ending.body2}</p>
+    <p class="end-body">${ending.body3}</p>
+    <div class="end-divider"></div>
+    <p class="end-body"><em>${ending.coda}</em></p>
+    <div class="end-divider"></div>
+    ${choiceLogHTML}
+    <button class="btn-primary" onclick="restartGame()">Play again</button>
+    <button class="btn-secondary" onclick="goTitle()" style="margin-top:12px">Title</button>
+  `;
+
+  fadeTransition(() => showScreen('end'));
+}
+</script>
+</body>
+</html>
